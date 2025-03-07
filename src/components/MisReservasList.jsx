@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Button, Container, Table } from "react-bootstrap";
+import { Button, Container, Table, Alert } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 
-const MisReservasList = () => {
+export default function MisReservasList (){
     const [reservas, setReservas] = useState([]);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => { 
@@ -13,21 +14,34 @@ const MisReservasList = () => {
                 const response = await api.get('/mis-reservas');
                 setReservas(response.data);
             } catch (err) {
-                // setError('No se puede completar la operación');
-                navigate('/login')
-                console.log(err);
+                setError('No se puede completar la operación');
+                navigate('/login');
+                console.error(err);
             }
         };
         peticion();
-    }, []); // <-- Agrega el arreglo de dependencias vacío
+    }, [navigate]);
+
+    const handleDelete = async (id) => {
+        if (window.confirm("¿Estás seguro de que deseas eliminar esta reserva?")) {
+            try {
+                await api.delete(`/mis-reservas/del/${id}`);
+                setReservas(reservas.filter(reserva => reserva.id !== id));
+            } catch (err) {
+                setError('No se pudo eliminar la reserva');
+                console.error(err);
+            }
+        }
+    };
 
     return (
         <Container>
-            <Table>
+            {error && <Alert variant="danger">{error}</Alert>}
+            <Table striped bordered hover>
                 <thead>
                     <tr>
                         <th>ID</th>  
-                        <th>Instalacion</th> 
+                        <th>Instalación</th> 
                         <th>Hora reserva</th>
                         <th>Fecha reserva</th>
                         <th>Editar</th>
@@ -47,7 +61,7 @@ const MisReservasList = () => {
                                 </Button>
                             </td>                            
                             <td>
-                                <Button as={Link} to={`/mis-reservas/del/${reserva.id}`} className="btn-danger">
+                                <Button onClick={() => handleDelete(reserva.id)} className="btn-danger">
                                     Eliminar
                                 </Button>
                             </td>
@@ -55,9 +69,6 @@ const MisReservasList = () => {
                     ))}
                 </tbody>
             </Table>
-            {/*error && <p style={{ color: 'red' }}>{error}</p>*/}
         </Container>
     );
 };
-
-export default MisReservasList;
